@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 )
 
@@ -48,7 +47,7 @@ func TestTodoCli(t *testing.T) {
 	cmdPath := filepath.Join(dir, binName)
 
 	t.Run("AddNewTask", func(t *testing.T) {
-		cmd := exec.Command(cmdPath, strings.Split(task, " ")...)
+		cmd := exec.Command(cmdPath, "-task", task)
 
 		if err := cmd.Run(); err != nil {
 			t.Fatal(err)
@@ -56,12 +55,30 @@ func TestTodoCli(t *testing.T) {
 	})
 
 	t.Run("ListTasks", func(t *testing.T) {
-		cmd := exec.Command(cmdPath)
+		cmd := exec.Command(cmdPath, "-list")
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := task + "\n"
+		expected := fmt.Sprintf("  1: %s\n", task)
+		if expected != string(out) {
+			t.Errorf("Expected %q, got %q instead.", expected, string(out))
+		}
+	})
+
+	t.Run("CompleteTask", func(t *testing.T) {
+		cmdComplete := exec.Command(cmdPath, "-complete", "1")
+
+		if err := cmdComplete.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdList := exec.Command(cmdPath, "-list")
+		out, err := cmdList.CombinedOutput()
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := fmt.Sprintf("X 1: %s\n", task)
 		if expected != string(out) {
 			t.Errorf("Expected %q, got %q instead.", expected, string(out))
 		}
